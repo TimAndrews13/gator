@@ -1,0 +1,11 @@
+# Binary output
+gator
+
+# Environment/config (optional, but recommended if your config has secrets)
+.gatorconfig.json
+
+# Test cache
+*.test
+
+# Dependency vendor directory (if not intentionally vendoring)
+vendor/
