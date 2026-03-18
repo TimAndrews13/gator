@@ -4,31 +4,17 @@ import (
 	"fmt"
 
 	"github.com/TimAndrews13/gator/internal/config"
+	"github.com/TimAndrews13/gator/internal/database"
 )
 
 type state struct {
+	db  *database.Queries
 	cfg *config.Config
 }
 
 type command struct {
 	name      string
 	arguments []string
-}
-
-func handlerLogin(s *state, cmd command) error {
-	if len(cmd.arguments) == 0 {
-		return fmt.Errorf("username required\n")
-	}
-
-	userName := cmd.arguments[0]
-
-	err := s.cfg.SetUser(userName)
-	if err != nil {
-		return fmt.Errorf("error when setting user %s: %w", userName, err)
-	}
-
-	fmt.Printf("User has been set to %s\n", cmd.arguments[0])
-	return nil
 }
 
 type commands struct {
