@@ -40,6 +40,7 @@ func main() {
 	cmds.register("users", handlerUsersList)
 	cmds.register("agg", handlerAgg)
 	cmds.register("addfeed", handlerAddFeed)
+	cmds.register("feeds", handlerGetFeeds)
 
 	args := os.Args
 	if len(args) < 2 {

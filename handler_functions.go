@@ -123,3 +123,17 @@ func handlerAddFeed(s *state, cmd command) error {
 
 	return nil
 }
+
+func handlerGetFeeds(s *state, cmd command) error {
+	var feeds []database.GetFeedsRow
+	feeds, err := s.db.GetFeeds(context.Background())
+	if err != nil {
+		return fmt.Errorf("error retrieving feeds: %v\n", err)
+	}
+
+	for i := 0; i < len(feeds); i++ {
+		fmt.Printf("* Feed: %s | URL: %s | User: %s\n", feeds[i].FeedName, feeds[i].Url, feeds[i].UserName)
+	}
+
+	return nil
+}
