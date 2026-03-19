@@ -37,6 +37,7 @@ func main() {
 	cmds.register("login", handlerLogin)
 	cmds.register("register", handlerRegister)
 	cmds.register("reset", handlerReset)
+	cmds.register("users", handlerUsersList)
 
 	args := os.Args
 	if len(args) < 2 {
@@ -54,14 +55,4 @@ func main() {
 		fmt.Printf("error running %s: %v\n", cmd.name, err)
 		os.Exit(1)
 	}
-	/*
-	   cfg, err = config.Read()
-
-	   	if err != nil {
-	   		fmt.Printf("Error Reading Rewritten Config File: %v", err)
-	   		return
-	   	}
-
-	   fmt.Print(cfg)
-	*/
 }
