@@ -2,7 +2,9 @@ package main
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/TimAndrews13/gator/internal/database"
@@ -99,6 +101,19 @@ func handlerAgg(s *state, cmd command) error {
 	return nil
 }
 
+func processDate(pubDateString string) (sql.NullTime, error) {
+	parsedTime, err := time.Parse(time.RFC1123, pubDateString)
+	if err != nil {
+		return sql.NullTime{}, fmt.Errorf("failed to parse time: %w\n", err)
+	}
+
+	nullTime := sql.NullTime{
+		Time:  parsedTime,
+		Valid: true,
+	}
+	return nullTime, nil
+}
+
 func scrapeFeeds(s *state) {
 	//get nextFeed
 	nextFeed, err := s.db.GetNextFeedtoFetch(context.Background())
@@ -119,12 +134,31 @@ func scrapeFeeds(s *state) {
 		return
 	}
 
-	fmt.Printf("\nFeed Title %s\n", rssFeed.Channel.Title)
+	for _, item := range rssFeed.Channel.Item {
+		if item.Title == "" {
+			continue
+		}
+		processDate, err := processDate(item.PubDate)
+		if err != nil {
+			fmt.Printf("error processing date\n")
+		}
 
-	for i, item := range rssFeed.Channel.Item {
-		fmt.Printf("Item %d Title: %s\n", i+1, item.Title)
+		_, err = s.db.CreatePost(context.Background(), database.CreatePostParams{
+			ID:          uuid.New(),
+			CreatedAt:   time.Now(),
+			UpdatedAt:   time.Now(),
+			Title:       item.Title,
+			Url:         item.Link,
+			Description: sql.NullString{String: item.Description, Valid: item.Description != ""},
+			PublishedAt: processDate,
+			FeedID:      uuid.NullUUID{UUID: nextFeed.ID, Valid: true},
+		})
+		if err != nil {
+			fmt.Printf("error creating post from %s: %v\n", rssFeed.Channel.Title, err)
+			return
+		}
 	}
-
+	fmt.Printf("posts from %s added for user\n", rssFeed.Channel.Title)
 }
 
 func handlerAddFeed(s *state, cmd command, user database.User) error {
@@ -233,6 +267,30 @@ func handlerUnfollow(s *state, cmd command, user database.User) error {
 	}
 
 	fmt.Printf("Feed %s Unfollowed by %s\n", feed.Name, user.Name)
+	return nil
+}
+
+func handlerGetPostsForUser(s *state, cmd command, user database.User) error {
+	var limitNum int32
+	if len(cmd.arguments) != 0 {
+		limit64, _ := strconv.ParseInt(cmd.arguments[0], 10, 32)
+		limitNum = int32(limit64)
+	} else {
+		limitNum = 2
+	}
+
+	posts, err := s.db.GetPostsForUser(context.Background(), database.GetPostsForUserParams{
+		Name:  user.Name,
+		Limit: limitNum,
+	})
+	if err != nil {
+		return fmt.Errorf("error retrieving posts for current user: %v\n", err)
+	}
+
+	for _, item := range posts {
+		fmt.Printf("* %s\n", item.Title)
+	}
+
 	return nil
 }
 
