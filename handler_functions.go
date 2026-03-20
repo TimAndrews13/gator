@@ -81,20 +81,50 @@ func handlerUsersList(s *state, cmd command) error {
 }
 
 func handlerAgg(s *state, cmd command) error {
-	/*  ADD BACK IN WHEN WE DO NOT WANT A HARDCODED URL
 	if len(cmd.arguments) == 0 {
-		return fmt.Errorf("url required\n")
+		return fmt.Errorf("time between requests required\n")
 	}
-	*/
 
-	rssFeed, err := fetchFeed(context.Background(), "https://www.wagslane.dev/index.xml")
+	timeBetweenRequests, err := time.ParseDuration(cmd.arguments[0])
 	if err != nil {
-		return fmt.Errorf("error retrieving rss feed from url: %v", err)
+		return fmt.Errorf("error setting time between requests: %v\n", err)
 	}
+	fmt.Printf("Collecting feeds every %v\n", timeBetweenRequests)
 
-	fmt.Printf("Feed: %+v\n", rssFeed)
+	ticker := time.NewTicker(timeBetweenRequests)
+	for ; ; <-ticker.C {
+		scrapeFeeds(s)
+	}
 
 	return nil
+}
+
+func scrapeFeeds(s *state) {
+	//get nextFeed
+	nextFeed, err := s.db.GetNextFeedtoFetch(context.Background())
+	if err != nil {
+		fmt.Printf("error fetching next feed: %v\n", err)
+		return
+	}
+	//mark nextFeed as fetched
+	_, err = s.db.MarkFeedFetched(context.Background(), nextFeed.ID)
+	if err != nil {
+		fmt.Printf("error marking feed as fetched: %v\n", err)
+		return
+	}
+
+	rssFeed, err := fetchFeed(context.Background(), nextFeed.Url)
+	if err != nil {
+		fmt.Printf("error retrieving rss feed from url: %v\n", err)
+		return
+	}
+
+	fmt.Printf("\nFeed Title %s\n", rssFeed.Channel.Title)
+
+	for i, item := range rssFeed.Channel.Item {
+		fmt.Printf("Item %d Title: %s\n", i+1, item.Title)
+	}
+
 }
 
 func handlerAddFeed(s *state, cmd command, user database.User) error {

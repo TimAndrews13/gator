@@ -5,7 +5,8 @@ CREATE TABLE feeds (
     updated_at TIMESTAMP NOT NULL,
     name TEXT NOT NULL,
     url TEXT UNIQUE NOT NULL,
-    user_id UUID, 
+    user_id UUID,
+    last_fetched_at TIMESTAMP, 
     CONSTRAINT fk_user
     FOREIGN KEY (user_id)
     REFERENCES users(id)
